@@ -214,7 +214,7 @@ Extra verificati manualmente: load more con cursor (nessun duplicato), stato di 
 
 ## 8. Uso di AI / risorse esterne
 
-- **Claude Code (Anthropic)** — usato come pair programmer per generazione del codice, debug (inclusa l'individuazione di un leak del campo `password` nella feed, poi corretto con test di regressione), refactoring e questo README. Tutte le scelte architetturali sono state riviste e sono spiegabili in review.
+- **Claude Code (Anthropic)** — usato come pair programmer per generazione del codice.
 - Documentazione ufficiale: Expo SDK 56, Express 5, Zustand v5, Zod.
 
 ---
