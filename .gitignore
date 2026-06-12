@@ -7,10 +7,9 @@ node_modules/
 # Tooling locale
 .claude/
 
-# Documenti del test e collection locale — non pubblicare
+# Documenti del test — non pubblicare
 01_Test_Tecnico_Candidato_Mini_Feed_ReactNative.pdf
 03_Guida_Setup_E_Consegna_ReactNative.pdf
-Ivory_Mini_Feed.postman_collection.json
 
 # Sistema
 .DS_Store
