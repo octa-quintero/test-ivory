@@ -163,6 +163,10 @@ Coprono, tra gli altri, i 5 casi richiesti:
 
 Più: unlike idempotente, creazione post, paginazione commenti, rate limiting, autorizzazione admin, e un test di regressione che verifica che la feed **non esponga mai il campo `password`** dell'autore.
 
+### Collection Postman
+
+Nella root del repo c'è `Ivory_Mini_Feed.postman_collection.json`: importala in Postman (Import → trascina il file) con il backend avviato. Il login salva automaticamente il token, e «Crea post» / «Crea commento» popolano `postId` e `commentId` — le richieste si possono eseguire in sequenza senza copiare nulla a mano. Ogni richiesta include assertion su status e formati di risposta.
+
 ### Mobile — 4 casi manuali documentati
 
 | # | Caso | Passi | Risultato atteso | Esito |
@@ -231,4 +235,3 @@ Extra verificati manualmente: load more con cursor (nessun duplicato), stato di 
 
 - `node_modules/` esclusi dalla consegna
 - Nessuna chiave API o segreto reale: `.env` locale, `.env.example` incluso come template
-- Tempo di lavoro entro le 24 ore dalla ricezione
