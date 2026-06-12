@@ -4,8 +4,9 @@ node_modules/
 # Variabili d'ambiente — mai committare segreti
 .env
 
-# Tooling locale
+# Tooling locale e appunti personali
 .claude/
+backend/PENDIENTE.md
 
 # Documenti del test — non pubblicare
 01_Test_Tecnico_Candidato_Mini_Feed_ReactNative.pdf

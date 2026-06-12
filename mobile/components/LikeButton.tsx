@@ -25,7 +25,7 @@ function HeartBurst({ trigger }: { trigger: number }) {
     progress.setValue(0);
     Animated.timing(progress, {
       toValue: 1,
-      duration: 700,
+      duration: 480,
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start(() => setVisible(false));
@@ -105,15 +105,24 @@ export default function LikeButton({ postId, likedByMe, likesCount }: LikeButton
 
   const handlePress = (): void => {
     if (!likedByMe) {
-      // Burst + "pop" del cuore solo quando si mette like, non quando si toglie
+      // Burst + "pop" del cuore solo quando si mette like, non quando si toglie:
+      // cresce con overshoot e rimbalza alla dimensione originale
       setBurstTrigger((t) => t + 1);
-      popScale.setValue(0.6);
-      Animated.spring(popScale, {
-        toValue: 1,
-        friction: 3,
-        tension: 180,
-        useNativeDriver: true,
-      }).start();
+      popScale.setValue(1);
+      Animated.sequence([
+        Animated.timing(popScale, {
+          toValue: 1.35,
+          duration: 70,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver: true,
+        }),
+        Animated.spring(popScale, {
+          toValue: 1,
+          friction: 4,
+          tension: 320,
+          useNativeDriver: true,
+        }),
+      ]).start();
     }
     void toggleLike(postId, likedByMe);
   };
@@ -144,7 +153,10 @@ const styles = StyleSheet.create({
     gap: 5,
     paddingVertical: 6,
   },
+  // Dimensioni fisse: ♥ e ♡ hanno metriche diverse, senza box fisso il layout salta
   heartWrap: {
+    width: 24,
+    height: 24,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -152,6 +164,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: INACTIVE,
     lineHeight: 22,
+    textAlign: 'center',
   },
   heartLiked: {
     color: ACTIVE,

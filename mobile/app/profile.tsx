@@ -1,5 +1,5 @@
 import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -23,6 +23,31 @@ export default function ProfileScreen() {
 
   const [name, setName] = useState(user?.name ?? '');
   const [email, setEmail] = useState(user?.email ?? '');
+  const nameRef = useRef<TextInput>(null);
+  const emailRef = useRef<TextInput>(null);
+  const [editingName, setEditingName] = useState(false);
+  const [editingEmail, setEditingEmail] = useState(false);
+
+  const toggleEditName = (): void => {
+    const next = !editingName;
+    setEditingName(next);
+    if (next) {
+      // editable deve essere true prima del focus — aspetta il re-render
+      setTimeout(() => nameRef.current?.focus(), 50);
+    } else {
+      nameRef.current?.blur();
+    }
+  };
+
+  const toggleEditEmail = (): void => {
+    const next = !editingEmail;
+    setEditingEmail(next);
+    if (next) {
+      setTimeout(() => emailRef.current?.focus(), 50);
+    } else {
+      emailRef.current?.blur();
+    }
+  };
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
@@ -71,6 +96,8 @@ export default function ProfileScreen() {
       const { user: updated } = await endpoints.updateMe(fields);
       setUser(updated);
       setSuccess(true);
+      setEditingName(false);
+      setEditingEmail(false);
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { error?: string } } })
         ?.response?.data?.error;
@@ -107,38 +134,59 @@ export default function ProfileScreen() {
 
           <View style={styles.field}>
             <Text style={styles.label}>Nome</Text>
-            <TextInput
-              style={styles.input}
-              value={name}
-              onChangeText={(t) => { setName(t); setError(''); setSuccess(false); }}
-              placeholder="Il tuo nome"
-              placeholderTextColor="#6b6f85"
-              autoCapitalize="words"
-              editable={!saving}
-            />
+            <View style={[styles.inputRow, editingName && styles.inputRowActive]}>
+              <TextInput
+                ref={nameRef}
+                style={[styles.input, !editingName && styles.inputLocked]}
+                value={name}
+                onChangeText={(t) => { setName(t); setError(''); setSuccess(false); }}
+                placeholder="Il tuo nome"
+                placeholderTextColor="#6b6f85"
+                autoCapitalize="words"
+                editable={editingName && !saving}
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.editIconBtn,
+                  editingName && styles.editIconBtnActive,
+                  pressed && styles.editIconBtnPressed,
+                ]}
+                onPress={toggleEditName}
+                hitSlop={8}
+              >
+                <Text style={[styles.editIcon, editingName && styles.editIconActive]}>✎</Text>
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.field}>
             <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              value={email}
-              onChangeText={(t) => { setEmail(t); setError(''); setSuccess(false); }}
-              placeholder="la-tua@email.com"
-              placeholderTextColor="#6b6f85"
-              autoCapitalize="none"
-              keyboardType="email-address"
-              editable={!saving}
-            />
-          </View>
-
-          {/* Campo non editabile: ID */}
-          <View style={styles.field}>
-            <Text style={styles.label}>ID account</Text>
-            <View style={styles.readOnly}>
-              <Text style={styles.readOnlyText}>{user?.id ?? '—'}</Text>
+            <View style={[styles.inputRow, editingEmail && styles.inputRowActive]}>
+              <TextInput
+                ref={emailRef}
+                style={[styles.input, !editingEmail && styles.inputLocked]}
+                value={email}
+                onChangeText={(t) => { setEmail(t); setError(''); setSuccess(false); }}
+                placeholder="la-tua@email.com"
+                placeholderTextColor="#6b6f85"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                editable={editingEmail && !saving}
+              />
+              <Pressable
+                style={({ pressed }) => [
+                  styles.editIconBtn,
+                  editingEmail && styles.editIconBtnActive,
+                  pressed && styles.editIconBtnPressed,
+                ]}
+                onPress={toggleEditEmail}
+                hitSlop={8}
+              >
+                <Text style={[styles.editIcon, editingEmail && styles.editIconActive]}>✎</Text>
+              </Pressable>
             </View>
           </View>
+
         </View>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -243,30 +291,54 @@ const styles = StyleSheet.create({
     color: '#a0a3b1',
     fontWeight: '500',
   },
-  input: {
+  inputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     backgroundColor: '#17182B',
     borderWidth: 1,
     borderColor: '#2e3048',
     borderRadius: 10,
+  },
+  inputRowActive: {
+    borderColor: '#C9B99A88',
+  },
+  input: {
+    flex: 1,
     paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 15,
     color: '#e8e8f0',
   },
-  readOnly: {
+  inputLocked: {
+    color: '#a0a3b1',
+  },
+  editIconBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    marginRight: 10,
     backgroundColor: '#252740',
     borderWidth: 1,
-    borderColor: '#2e3048',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: '#C9B99A44',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  readOnlyText: {
-    fontSize: 13,
-    color: '#6b6f85',
-    fontFamily: 'monospace',
+  editIconBtnActive: {
+    backgroundColor: '#C9B99A',
+    borderColor: '#C9B99A',
   },
-
+  editIconBtnPressed: {
+    opacity: 0.6,
+    transform: [{ scale: 0.88 }],
+  },
+  editIcon: {
+    fontSize: 12,
+    color: '#C9B99A',
+    lineHeight: 15,
+  },
+  editIconActive: {
+    color: '#17182B',
+  },
   // Feedback
   error: {
     fontSize: 13,
