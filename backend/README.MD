@@ -1,49 +1,49 @@
 # Mini Feed API
 
-API REST que alimenta una app React Native con feed paginado, likes idempotentes y comentarios.
+API REST che alimenta un'app React Native con feed paginata, like idempotenti e commenti.
 
 ---
 
-## Arranque rápido
+## Avvio rapido
 
-### Local (sin Docker)
+### Locale (senza Docker)
 
 ```bash
-cp .env.example .env   # ajusta JWT_SECRET antes de arrancar
+cp .env.example .env   # imposta JWT_SECRET prima di avviare
 npm install
 npm run dev            # http://localhost:3000
 ```
 
-> Redis es opcional en local. Si no está corriendo, el cache falla silenciosamente y la API funciona igual sin él.
+> Redis è opzionale in locale. Se non è in esecuzione, la cache fallisce silenziosamente e la API funziona lo stesso senza di lei.
 
 ### Docker (API + Redis)
 
 ```bash
-docker compose up --build        # build + arrancar (logs en consola)
-docker compose up --build -d     # en background
-docker compose logs -f           # ver logs en vivo
-docker compose down              # detener
+docker compose up --build        # build + avvio (log in console)
+docker compose up --build -d     # in background
+docker compose logs -f           # log in tempo reale
+docker compose down              # arresto
 ```
 
-El compose levanta dos servicios: `api` (Node.js) y `redis` (Redis 7 Alpine). La API espera a que Redis pase su healthcheck antes de arrancar (`depends_on: condition: service_healthy`).
+Il compose avvia due servizi: `api` (Node.js) e `redis` (Redis 7 Alpine). La API aspetta che Redis superi il suo healthcheck prima di partire (`depends_on: condition: service_healthy`).
 
-### Variables de entorno
+### Variabili d'ambiente
 
-| Variable | Requerida | Default | Descripción |
-|----------|-----------|---------|-------------|
-| `JWT_SECRET` | Sí | — | Mínimo 16 caracteres |
-| `JWT_EXPIRES_IN` | No | `7d` | Expiración del token |
-| `PORT` | No | `3000` | Puerto del servidor |
+| Variabile | Obbligatoria | Default | Descrizione |
+|-----------|--------------|---------|-------------|
+| `JWT_SECRET` | Sì | — | Minimo 16 caratteri |
+| `JWT_EXPIRES_IN` | No | `7d` | Scadenza del token |
+| `PORT` | No | `3000` | Porta del server |
 | `NODE_ENV` | No | `development` | `development` / `production` / `test` |
-| `REDIS_URL` | No | `redis://localhost:6379` | URL de conexión a Redis |
+| `REDIS_URL` | No | `redis://localhost:6379` | URL di connessione a Redis |
 
 ---
 
-## Endpoints
+## Endpoint
 
 Base URL: `http://localhost:3000`
 
-Todos los endpoints con 🔒 requieren el header:
+Tutti gli endpoint con 🔒 richiedono l'header:
 ```
 Authorization: Bearer <accessToken>
 ```
@@ -52,9 +52,9 @@ Authorization: Bearer <accessToken>
 
 ### GET `/health`
 
-Estado del servidor. Sin autenticación.
+Stato del server. Senza autenticazione.
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 {
   "status": "ok",
@@ -65,7 +65,7 @@ Estado del servidor. Sin autenticación.
 }
 ```
 
-`redis` puede ser `"ok"` o `"unavailable"`. La API funciona en ambos casos.
+`redis` può essere `"ok"` o `"unavailable"`. La API funziona in entrambi i casi.
 
 ```bash
 curl http://localhost:3000/health
@@ -75,14 +75,16 @@ curl http://localhost:3000/health
 
 ### POST `/v1/auth/login`
 
-Login mock por email. Devuelve un **JWT** firmado con HS256, válido 7 días.
+Login mock via email. Ritorna un **JWT** firmato con HS256, valido 7 giorni.
+
+La **password è opzionale** (login mock come da spec): senza password si entra solo con l'email; se viene inviata, deve essere corretta.
 
 **Body**
 ```json
 { "email": "ada@ivory.test" }
 ```
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 {
   "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
@@ -90,7 +92,7 @@ Login mock por email. Devuelve un **JWT** firmado con HS256, válido 7 días.
 }
 ```
 
-El payload del token contiene `{ sub: userId, role, iat, exp }`. El middleware verifica la firma sin consultar ningún store — stateless.
+Il payload del token contiene `{ sub: userId, role, iat, exp }`. Il middleware verifica la firma senza consultare nessuno store — stateless.
 
 ```bash
 curl -X POST http://localhost:3000/v1/auth/login \
@@ -98,29 +100,29 @@ curl -X POST http://localhost:3000/v1/auth/login \
   -d '{"email": "ada@ivory.test"}'
 ```
 
-Usuarios seed disponibles:
+Utenti seed disponibili:
 
-| Email | Rol |
-|-------|-----|
-| `ada@ivory.test` | `admin` |
-| `alan@ivory.test` | `user` |
+| Email | Password | Ruolo |
+|-------|----------|-------|
+| `ada@ivory.test` | `ivory1234` | `admin` |
+| `alan@ivory.test` | `ivory1234` | `user` |
 
 ---
 
 ### GET `/v1/feed`
 
-Feed paginada con cursor, ordenada de más reciente a más antigua.
+Feed paginata con cursor, ordinata dalla più recente alla più vecchia.
 
-La primera página sin autenticación se sirve desde **caché Redis** (TTL 60s). Se invalida automáticamente al hacer like, unlike o comentar.
+La prima pagina senza autenticazione viene servita dalla **cache Redis** (TTL 60s). Si invalida automaticamente a ogni like, unlike, commento o modifica.
 
 **Query params**
 
-| Param | Tipo | Default | Descripción |
+| Param | Tipo | Default | Descrizione |
 |-------|------|---------|-------------|
-| `limit` | number | 10 | Máximo 20 |
-| `cursor` | string | — | ID del último post recibido |
+| `limit` | number | 10 | Massimo 20 |
+| `cursor` | string | — | ID dell'ultimo post ricevuto |
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 {
   "posts": [
@@ -139,13 +141,13 @@ La primera página sin autenticación se sirve desde **caché Redis** (TTL 60s).
 }
 ```
 
-`nextCursor` es `null` cuando no hay más páginas.
+`nextCursor` è `null` quando non ci sono altre pagine. Il campo `author` non espone mai la password.
 
 ```bash
-# Primera página (cacheada en Redis)
+# Prima pagina (in cache su Redis)
 curl "http://localhost:3000/v1/feed?limit=3"
 
-# Siguiente página
+# Pagina successiva
 curl "http://localhost:3000/v1/feed?limit=3&cursor=post-8"
 ```
 
@@ -153,9 +155,9 @@ curl "http://localhost:3000/v1/feed?limit=3&cursor=post-8"
 
 ### POST `/v1/posts/:postId/like` 🔒
 
-Agrega un like. Idempotente: llamar dos veces con el mismo usuario no duplica el contador. Invalida el caché del feed.
+Aggiunge un like. Idempotente: chiamare due volte con lo stesso utente non duplica il contatore. Invalida la cache della feed.
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 { "success": true }
 ```
@@ -169,9 +171,9 @@ curl -X POST http://localhost:3000/v1/posts/post-1/like \
 
 ### DELETE `/v1/posts/:postId/like` 🔒
 
-Elimina el like. Idempotente: llamar dos veces no rompe el estado. Invalida el caché del feed.
+Rimuove il like. Idempotente: chiamare due volte non rompe lo stato. Invalida la cache della feed.
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 { "success": true }
 ```
@@ -185,9 +187,16 @@ curl -X DELETE http://localhost:3000/v1/posts/post-1/like \
 
 ### GET `/v1/posts/:postId/comments`
 
-Lista los comentarios de un post. Devuelve 404 si el post no existe.
+Lista i commenti di un post, paginati con cursor. Ritorna 404 se il post non esiste.
 
-**Respuesta 200**
+**Query params**
+
+| Param | Tipo | Default | Descrizione |
+|-------|------|---------|-------------|
+| `limit` | number | 20 | Massimo 50 |
+| `cursor` | string | — | ID dell'ultimo commento ricevuto |
+
+**Risposta 200**
 ```json
 {
   "comments": [
@@ -195,10 +204,11 @@ Lista los comentarios de un post. Devuelve 404 si el post no existe.
       "id": "abc123",
       "postId": "post-1",
       "authorId": "user-1",
-      "body": "Gran punto.",
+      "body": "Ottimo punto.",
       "createdAt": "2026-06-10T10:00:00.000Z"
     }
-  ]
+  ],
+  "nextCursor": null
 }
 ```
 
@@ -210,17 +220,17 @@ curl http://localhost:3000/v1/posts/post-1/comments
 
 ### POST `/v1/posts/:postId/comments` 🔒
 
-Crea un comentario. Body no puede estar vacío ni superar 500 caracteres. Invalida el caché del feed.
+Crea un commento. Il body non può essere vuoto né superare i 500 caratteri. Invalida la cache della feed.
 
 **Body**
 ```json
-{ "body": "Gran punto." }
+{ "body": "Ottimo punto." }
 ```
 
-**Respuesta 201**
+**Risposta 201**
 ```json
 {
-  "comment": { "id": "abc123", "postId": "post-1", "authorId": "user-1", "body": "Gran punto.", "createdAt": "..." },
+  "comment": { "id": "abc123", "postId": "post-1", "authorId": "user-1", "body": "Ottimo punto.", "createdAt": "..." },
   "commentsCount": 1
 }
 ```
@@ -229,27 +239,68 @@ Crea un comentario. Body no puede estar vacío ni superar 500 caracteres. Invali
 curl -X POST http://localhost:3000/v1/posts/post-1/comments \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"body": "Gran punto."}'
+  -d '{"body": "Ottimo punto."}'
+```
+
+---
+
+### PATCH `/v1/posts/:postId/comments/:commentId` 🔒
+
+Modifica un commento proprio. Solo l'autore può farlo (403 altrimenti). Stesse validazioni della creazione.
+
+**Body**
+```json
+{ "body": "Commento corretto." }
+```
+
+**Risposta 200**
+```json
+{
+  "comment": { "id": "abc123", "postId": "post-1", "authorId": "user-1", "body": "Commento corretto.", "createdAt": "..." }
+}
+```
+
+```bash
+curl -X PATCH http://localhost:3000/v1/posts/post-1/comments/abc123 \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "Commento corretto."}'
+```
+
+---
+
+### DELETE `/v1/posts/:postId/comments/:commentId` 🔒
+
+Elimina un commento proprio. Solo l'autore può farlo (403 altrimenti). Ritorna il nuovo `commentsCount`.
+
+**Risposta 200**
+```json
+{ "commentsCount": 0 }
+```
+
+```bash
+curl -X DELETE http://localhost:3000/v1/posts/post-1/comments/abc123 \
+  -H "Authorization: Bearer <token>"
 ```
 
 ---
 
 ### POST `/v1/posts` 🔒
 
-Crea un nuevo post. Body no puede estar vacío ni superar 500 caracteres. Invalida el caché del feed.
+Crea un nuovo post. Il body non può essere vuoto né superare i 500 caratteri. Invalida la cache della feed.
 
 **Body**
 ```json
-{ "body": "Texto del post." }
+{ "body": "Testo del post." }
 ```
 
-**Respuesta 201**
+**Risposta 201**
 ```json
 {
   "post": {
     "id": "post-uuid",
     "authorId": "user-1",
-    "body": "Texto del post.",
+    "body": "Testo del post.",
     "createdAt": "2026-06-11T10:00:00.000Z",
     "likesCount": 0,
     "commentsCount": 0
@@ -261,16 +312,16 @@ Crea un nuevo post. Body no puede estar vacío ni superar 500 caracteres. Invali
 curl -X POST http://localhost:3000/v1/posts \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"body": "Texto del post."}'
+  -d '{"body": "Testo del post."}'
 ```
 
 ---
 
 ### GET `/v1/posts/:postId`
 
-Devuelve un post por ID. 404 si no existe.
+Ritorna un post per ID. 404 se non esiste.
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 {
   "post": {
@@ -290,74 +341,144 @@ curl http://localhost:3000/v1/posts/post-1
 
 ---
 
-### GET `/v1/admin/posts` 🔒 `admin`
+### PATCH `/v1/posts/:postId` 🔒
 
-Lista todos los posts del store (panel de moderación), sin paginar.
+Modifica un post proprio. Solo l'autore può farlo (403 altrimenti). Stesse validazioni della creazione. Invalida la cache della feed.
 
-**Respuesta 200**
+**Body**
+```json
+{ "body": "Testo aggiornato." }
+```
+
+**Risposta 200** — il post aggiornato, stesso formato di `GET /v1/posts/:postId`.
+
+```bash
+curl -X PATCH http://localhost:3000/v1/posts/post-1 \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"body": "Testo aggiornato."}'
+```
+
+---
+
+### DELETE `/v1/posts/:postId` 🔒
+
+Elimina un post proprio. Solo l'autore può farlo (403 altrimenti). **Cascade**: elimina anche i commenti e i like del post.
+
+**Risposta** `204 No Content`
+
+```bash
+curl -X DELETE http://localhost:3000/v1/posts/post-1 \
+  -H "Authorization: Bearer <token>"
+```
+
+---
+
+### GET `/v1/me` 🔒
+
+Profilo dell'utente autenticato.
+
+**Risposta 200**
 ```json
 {
-  "posts": [ /* array completo de Post */ ]
+  "user": { "id": "user-1", "email": "ada@ivory.test", "name": "Ada Lovelace", "role": "admin" }
+}
+```
+
+```bash
+curl http://localhost:3000/v1/me -H "Authorization: Bearer <token>"
+```
+
+---
+
+### PATCH `/v1/me` 🔒
+
+Modifica nome e/o email dell'utente autenticato. Email già in uso → 409.
+
+**Body**
+```json
+{ "name": "Nuovo Nome", "email": "nuova@email.test" }
+```
+
+**Risposta 200** — l'utente aggiornato, stesso formato di `GET /v1/me`.
+
+```bash
+curl -X PATCH http://localhost:3000/v1/me \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Nuovo Nome"}'
+```
+
+---
+
+### DELETE `/v1/me` 🔒
+
+Elimina l'account dell'utente autenticato. **Cascade**: rimuove anche i suoi post, commenti e like.
+
+**Risposta** `204 No Content`
+
+```bash
+curl -X DELETE http://localhost:3000/v1/me -H "Authorization: Bearer <token>"
+```
+
+---
+
+### GET `/v1/admin/posts` 🔒 `admin`
+
+Lista tutti i post dello store (pannello di moderazione), senza paginazione.
+
+**Risposta 200**
+```json
+{
+  "posts": [ /* array completo di Post */ ]
 }
 ```
 
 ```bash
 curl http://localhost:3000/v1/admin/posts \
-  -H "Authorization: Bearer <token-de-admin>"
+  -H "Authorization: Bearer <token-admin>"
 ```
 
 ---
 
 ### PATCH `/v1/admin/posts/:postId` 🔒 `admin`
 
-Edita el body de un post existente. Mismas validaciones que al crear (no vacío, máx 500 chars). Invalida el caché del feed.
+Modifica il body di un post esistente (qualsiasi autore). Stesse validazioni della creazione. Invalida la cache della feed.
 
 **Body**
 ```json
-{ "body": "Texto corregido." }
+{ "body": "Testo corretto." }
 ```
 
-**Respuesta 200**
-```json
-{
-  "post": {
-    "id": "post-1",
-    "authorId": "user-1",
-    "body": "Texto corregido.",
-    "createdAt": "2026-06-01T08:00:00.000Z",
-    "likesCount": 14,
-    "commentsCount": 0
-  }
-}
-```
+**Risposta 200** — il post aggiornato.
 
 ```bash
 curl -X PATCH http://localhost:3000/v1/admin/posts/post-1 \
-  -H "Authorization: Bearer <token-de-admin>" \
+  -H "Authorization: Bearer <token-admin>" \
   -H "Content-Type: application/json" \
-  -d '{"body": "Texto corregido."}'
+  -d '{"body": "Testo corretto."}'
 ```
 
 ---
 
 ### DELETE `/v1/admin/posts/:postId` 🔒 `admin`
 
-Elimina un post. Solo accesible para usuarios con rol `admin`.
+Elimina un post (qualsiasi autore), con cascade su commenti e like. Solo per utenti con ruolo `admin`.
 
-**Respuesta** `204 No Content`
+**Risposta** `204 No Content`
 
 ```bash
 curl -X DELETE http://localhost:3000/v1/admin/posts/post-1 \
-  -H "Authorization: Bearer <token-de-admin>"
+  -H "Authorization: Bearer <token-admin>"
 ```
 
 ---
 
 ### GET `/v1/admin/users` 🔒 `admin`
 
-Lista todos los usuarios registrados en el store.
+Lista tutti gli utenti registrati nello store.
 
-**Respuesta 200**
+**Risposta 200**
 ```json
 {
   "users": [
@@ -369,89 +490,91 @@ Lista todos los usuarios registrados en el store.
 
 ```bash
 curl http://localhost:3000/v1/admin/users \
-  -H "Authorization: Bearer <token-de-admin>"
+  -H "Authorization: Bearer <token-admin>"
 ```
 
 ---
 
 ### DELETE `/v1/admin/users/:userId` 🔒 `admin`
 
-Elimina un usuario por ID.
+Elimina un utente per ID, con **cascade** su post, commenti e like. Auto-eliminazione → 403.
 
-**Respuesta** `204 No Content`
+**Risposta** `204 No Content`
 
 ```bash
 curl -X DELETE http://localhost:3000/v1/admin/users/user-2 \
-  -H "Authorization: Bearer <token-de-admin>"
+  -H "Authorization: Bearer <token-admin>"
 ```
 
 ---
 
-## Middlewares
+## Middleware
 
-| Middleware | Descripción |
+| Middleware | Descrizione |
 |------------|-------------|
-| `requestId` | Agrega `X-Request-Id` único (UUID) a cada request y response |
-| `helmet` | Headers de seguridad HTTP |
-| `cors` | Whitelist de orígenes (`localhost:8081`, `localhost:3000`) |
-| `compression` | Compresión gzip de responses |
-| `hpp` | Protección contra HTTP Parameter Pollution |
-| `morgan` | Log de requests HTTP, pipado a través de Winston |
-| `globalLimiter` | Rate limit global: 100 requests / 15min |
-| `authLimiter` | Rate limit en login: 5 intentos fallidos / 15min |
-| `authenticate` | Verifica JWT y adjunta `userId` y `userRole` al request |
-| `authorize` | Factory de control de acceso por rol |
+| `requestId` | Aggiunge un `X-Request-Id` univoco (UUID) a ogni request e response |
+| `helmet` | Header di sicurezza HTTP |
+| `cors` | Whitelist di origini (`localhost:8081`, `localhost:3000`) |
+| `compression` | Compressione gzip delle response |
+| `hpp` | Protezione contro HTTP Parameter Pollution |
+| `morgan` | Log delle request HTTP, instradato attraverso Winston |
+| `globalLimiter` | Rate limit globale: 100 request / 15min |
+| `authLimiter` | Rate limit sul login: 5 tentativi falliti / 15min |
+| `authenticate` | Verifica il JWT e aggiunge `userId` e `userRole` alla request |
+| `authorize` | Factory di controllo accessi per ruolo |
 
 ---
 
-## Decisiones técnicas
+## Decisioni tecniche
 
-**Express sobre NestJS** — el revisor puede leer cualquier handler en segundos sin conocer el framework. NestJS no aporta nada a esta escala y su boilerplate escondería las decisiones de diseño.
+**Express invece di NestJS** — il revisore può leggere qualsiasi handler in pochi secondi senza conoscere il framework. NestJS non aggiunge nulla a questa scala e il suo boilerplate nasconderebbe le decisioni di design.
 
-**Persistencia en memoria con patrón service/store** — el store vive en `src/data/store.ts` y los services son la única capa que lo toca. Cambiar a PostgreSQL implica reemplazar ese archivo; el resto del código no se modifica.
+**Persistenza in memoria con pattern service/store** — lo store vive in `src/data/store.ts` e i services sono l'unico layer che lo tocca. Passare a PostgreSQL significa sostituire quel file; il resto del codice non cambia.
 
-**Cache Redis para el feed** — la primera página anónima (`GET /v1/feed?limit=N`) se cachea en Redis con TTL de 60s. Las requests autenticadas se sirven frescas para calcular `likedByMe` por usuario. Al hacer like, unlike o comentar, el cache se invalida con `KEYS feed:first:*` + `DEL`. En producción se reemplazaría `KEYS` por `SCAN` para no bloquear Redis.
+**Cache Redis per la feed** — la prima pagina anonima (`GET /v1/feed?limit=N`) viene cacheata su Redis con TTL di 60s. Le request autenticate vengono servite fresche per calcolare `likedByMe` per utente. A ogni like, unlike, commento o modifica, la cache si invalida con `KEYS feed:first:*` + `DEL`. In produzione si sostituirebbe `KEYS` con `SCAN` per non bloccare Redis.
 
-**Idempotencia con `Set<string>`** — los likes se almacenan como `"userId:postId"`. `addLike` y `removeLike` verifican existencia antes de mutar el contador, garantizando que dobles llamadas sean no-ops sin lógica extra.
+**Idempotenza con `Set<string>`** — i like sono memorizzati come `"userId:postId"`. `addLike` e `removeLike` verificano l'esistenza prima di mutare il contatore, garantendo che le doppie chiamate siano no-op senza logica extra.
 
-**Cursor sobre offset** — la paginación por offset desplaza resultados si se insertan posts durante la navegación. El cursor apunta al último ítem visto y es estable ante inserciones concurrentes.
+**Cursor invece di offset** — la paginazione per offset sposta i risultati se vengono inseriti post durante la navigazione. Il cursor punta all'ultimo elemento visto ed è stabile rispetto a inserimenti concorrenti.
 
-**JWT stateless con HS256** — el payload lleva `{ sub, role, iat, exp }`. El middleware verifica la firma criptográficamente sin tocar ningún store. El `role` en el token evita un lookup extra por request. En producción: RS256 con clave privada para firmar y pública para verificar en cada servicio.
+**Ownership sui contenuti propri** — `PATCH/DELETE /v1/posts/:id` e `PATCH/DELETE` sui commenti verificano che il richiedente sia l'autore (403 altrimenti); le rotte `/v1/admin/*` permettono la moderazione su qualsiasi contenuto, protette dal middleware `authorize('admin')`.
 
-**Graceful shutdown** — `SIGTERM` (Docker stop) y `SIGINT` (Ctrl+C) cierran el servidor HTTP limpiamente antes de terminar el proceso, logueando cada paso con Winston.
+**JWT stateless con HS256** — il payload contiene `{ sub, role, iat, exp }`. Il middleware verifica la firma crittograficamente senza toccare nessuno store. Il `role` nel token evita un lookup extra per request. In produzione: RS256 con chiave privata per firmare e pubblica per verificare in ogni servizio.
 
-**Zod para validación y env** — mismo patrón en controllers (body) y en `src/config/env.ts` (variables de entorno). Si arrancar falla por una variable mal configurada, el error indica exactamente qué variable y por qué.
+**Graceful shutdown** — `SIGTERM` (Docker stop) e `SIGINT` (Ctrl+C) chiudono il server HTTP in modo pulito prima di terminare il processo, loggando ogni passo con Winston.
 
----
-
-## Qué falta / cómo lo completaría
-
-| Elemento | Estado | Cómo lo completaría |
-|----------|--------|---------------------|
-| Base de datos | En memoria | Reemplazar `src/data/store.ts` por repositorios PostgreSQL con `pg` o Prisma |
-| Autenticación real | JWT HS256 ✓ | RS256 + refresh tokens con rotación |
-| Cache de feed | Redis ✓ | `SCAN` en lugar de `KEYS` para producción; cache por usuario con `likedByMe` |
-| Rate limiting | `express-rate-limit` ✓ | Rate limit distribuido con Redis store para múltiples instancias |
-| Paginación de comentarios | Sin paginar | Mismo patrón cursor del feed |
-| Roles avanzados | `user` / `admin` ✓ | RBAC granular con permisos por recurso |
+**Zod per validazione ed env** — stesso pattern nei controller (body) e in `src/config/env.ts` (variabili d'ambiente). Se l'avvio fallisce per una variabile mal configurata, l'errore indica esattamente quale variabile e perché.
 
 ---
 
-## Scripts disponibles
+## Cosa manca / come lo completerei
+
+| Elemento | Stato | Come lo completerei |
+|----------|-------|---------------------|
+| Database | In memoria | Sostituire `src/data/store.ts` con repository PostgreSQL (`pg` o Prisma) |
+| Autenticazione reale | JWT HS256 ✓ | RS256 + refresh token con rotazione; password hashate con bcrypt |
+| Cache della feed | Redis ✓ | `SCAN` invece di `KEYS` in produzione; cache per utente con `likedByMe` |
+| Rate limiting | `express-rate-limit` ✓ | Rate limit distribuito con store Redis per istanze multiple |
+| Paginazione commenti | Cursor ✓ (backend) | Consumare `nextCursor` anche nella UI mobile |
+| Ruoli avanzati | `user` / `admin` ✓ | RBAC granulare con permessi per risorsa |
+
+---
+
+## Script disponibili
 
 ```bash
-npm run dev            # servidor con hot reload
+npm run dev            # server con hot reload
 npm run build          # compila TypeScript → dist/
-npm run start          # ejecuta dist/server.js
-npm test               # Vitest + Supertest (22 tests)
+npm run start          # esegue dist/server.js
+npm test               # Vitest + Supertest (48 test)
 npm run typecheck      # tsc --noEmit
-npm run lint           # ESLint sobre src/
-npm run format:check   # Prettier en modo verificación
-npm run openapi        # genera openapi.json desde la spec de Swagger
+npm run lint           # ESLint su src/
+npm run format:check   # Prettier in modalità verifica
+npm run openapi        # genera openapi.json dalla spec Swagger
 ```
 
 ---
 
-## Declaración de herramientas
+## Dichiarazione degli strumenti
 
-Este proyecto fue desarrollado con asistencia de **Claude Code** (Anthropic) como herramienta de desarrollo. La arquitectura, las decisiones técnicas y la revisión del código son del candidato.
+Questo progetto è stato sviluppato con l'assistenza di **Claude Code** (Anthropic) come strumento di sviluppo. L'architettura, le decisioni tecniche e la revisione del codice sono del candidato.
