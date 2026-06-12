@@ -9,10 +9,11 @@ API REST che alimenta un'app React Native con feed paginata, like idempotenti e 
 ### Locale (senza Docker)
 
 ```bash
-cp .env.example .env   # imposta JWT_SECRET prima di avviare
 npm install
 npm run dev            # http://localhost:3000
 ```
+
+Nessun `.env` necessario in sviluppo: tutte le variabili hanno un default. Per personalizzare: `cp .env.example .env`.
 
 > Redis è opzionale in locale. Se non è in esecuzione, la cache fallisce silenziosamente e la API funziona lo stesso senza di lei.
 
@@ -31,7 +32,7 @@ Il compose avvia due servizi: `api` (Node.js) e `redis` (Redis 7 Alpine). La API
 
 | Variabile | Obbligatoria | Default | Descrizione |
 |-----------|--------------|---------|-------------|
-| `JWT_SECRET` | Sì | — | Minimo 16 caratteri |
+| `JWT_SECRET` | Solo in produzione | default di sviluppo | Minimo 16 caratteri |
 | `JWT_EXPIRES_IN` | No | `7d` | Scadenza del token |
 | `PORT` | No | `3000` | Porta del server |
 | `NODE_ENV` | No | `development` | `development` / `production` / `test` |

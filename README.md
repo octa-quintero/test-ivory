@@ -25,10 +25,13 @@ test-ivory/
 ```bash
 cd backend
 npm install
-cp .env.example .env   # su Windows: copy .env.example .env
 ```
 
-Nel file `.env` l'unica variabile obbligatoria è `JWT_SECRET` (minimo 16 caratteri):
+Nessuna configurazione necessaria in sviluppo: tutte le variabili hanno un default (incluso `JWT_SECRET`, che resta obbligatorio solo con `NODE_ENV=production`). Per personalizzare, copiare il template:
+
+```bash
+cp .env.example .env   # su Windows: copy .env.example .env
+```
 
 ```env
 PORT=3000
